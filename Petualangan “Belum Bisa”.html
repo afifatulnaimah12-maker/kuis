@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Petualangan “Belum Bisa”</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1f2a44;--card:#fff;--bg:#e8f3ff;--gold:#f6b93b;--pipe:#2e9d5b;--brick:#b5651d;--grass:#3fa34d;--bad:#d64545;--font:"Press Start 2P",ui-monospace,monospace;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#f2f5ff;--card:#222c47;--bg:#10162b}}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif;display:flex;justify-content:center;padding:12px}
+#game{width:100%;max-width:820px;position:relative}
+#hud{display:flex;justify-content:space-between;gap:8px;font:11px var(--font);padding:10px 12px;background:#1f2a44;color:#fff;border-radius:10px 10px 0 0}
+#stage{position:relative;height:340px;overflow:hidden;background:linear-gradient(#4fb0f0,#bfe6ff);border-radius:0 0 10px 10px}
+#sky{position:absolute;inset:0;background:radial-gradient(ellipse 60px 22px at 60px 60px,#fff 98%,#0000),radial-gradient(ellipse 80px 26px at 330px 40px,#fff 98%,#0000),radial-gradient(ellipse 50px 18px at 560px 90px,#fff 98%,#0000);background-size:700px 160px;background-repeat:repeat-x}
+#world{position:absolute;left:0;bottom:0;height:100%;}
+.ground{position:absolute;left:0;bottom:0;height:70px;width:100%;background:linear-gradient(var(--grass) 0 14px,var(--brick) 14px),repeating-linear-gradient(90deg,#0000 0 39px,#0003 39px 40px);background-blend-mode:multiply}
+.blk{position:absolute;bottom:175px;width:52px;height:52px;background:var(--gold);border:3px solid #7a4d00;border-radius:6px;font:20px var(--font);color:#7a4d00;display:grid;place-items:center;transition:background .3s}
+.blk.used{background:#a38a5c}
+.blk.hit{animation:bump .35s}
+.pipe{position:absolute;bottom:70px;width:64px;height:140px;background:var(--pipe);border:3px solid #17623a;border-radius:6px 6px 0 0;transition:height .6s}
+.pipe.open{height:0;border-width:0}
+.coin{position:absolute;font-size:28px;animation:pop .9s forwards}
+.flag{position:absolute;bottom:70px;font-size:64px}
+#me{position:absolute;left:100px;bottom:70px;font-size:50px;line-height:1;z-index:3}
+#me.walk{animation:walk .28s infinite}#me svg{display:block;width:42px;height:54px;overflow:visible}.lg{transform-box:fill-box;transform-origin:50% 0}#me.walk .l1{animation:sw .18s infinite alternate}#me.walk .l2{animation:sw .18s infinite alternate-reverse}@keyframes sw{from{transform:rotate(-30deg)}to{transform:rotate(30deg)}}
+#me.jump{animation:jump .6s}
+@keyframes walk{50%{transform:translateY(-6px)}}
+@keyframes jump{40%{transform:translateY(-95px)}}
+@keyframes bump{50%{transform:translateY(-12px)}}
+@keyframes pop{to{transform:translateY(-90px);opacity:0}}
+#modal,#intro{position:absolute;inset:44px 0 0;display:none;place-items:center;padding:10px;background:#0006;z-index:5;overflow:auto}
+#modal.on,#intro.on{display:grid}
+.card{background:var(--card);color:var(--ink);border:4px solid var(--ink);border-radius:12px;padding:16px;max-width:640px;width:100%}
+.card h2{font:14px/1.6 var(--font);margin:0 0 8px}
+.card p{margin:0 0 10px}
+.opt{display:block;width:100%;text-align:left;margin:7px 0;padding:10px 12px;font:inherit;color:var(--ink);background:var(--bg);border:3px solid var(--ink);border-radius:8px;cursor:pointer;min-height:44px}
+.opt:hover:not(:disabled){background:var(--gold)}
+.opt:focus-visible,.go:focus-visible{outline:3px solid #2a7de1;outline-offset:2px}
+.opt.ok{background:#bdeccb;color:#12301f}
+.opt.no{background:#f6c9c9;color:#4a1212;text-decoration:line-through}
+.go{font:12px var(--font);padding:14px 18px;background:var(--gold);color:#3b2600;border:3px solid #7a4d00;border-radius:8px;cursor:pointer;min-height:44px}
+#fb{min-height:24px;font-weight:600}
+.bad{color:var(--bad)}
+#pad{display:flex;gap:8px;margin-top:10px;user-select:none;-webkit-user-select:none}#pad button{flex:1;min-height:56px;font:16px var(--font);background:var(--gold);color:#3b2600;border:3px solid #7a4d00;border-radius:10px;touch-action:none;cursor:pointer}#pad button:active{filter:brightness(.9)}#pad button:last-child{flex:2}#tip{font-size:14px;margin:8px 2px 0}#mu{font-size:16px;background:none;border:0;color:#fff;cursor:pointer;min-width:32px;min-height:32px}
+@media(prefers-reduced-motion:reduce){#me.walk,#me.walk .lg{animation:none}}
+</style>
+</head>
+<body>
+<div id="game">
+ <div id="hud"><span>Skor <b id="sc">0</b></span><span>Koin <b id="co">0</b></span><span>Soal <b id="pr">0</b>/10</span><button id="mu" aria-label="Suara hidup atau mati">🔊</button></div>
+ <div id="stage"><div id="sky"></div><div id="world"></div><div id="me"><svg viewBox="0 0 42 54" aria-label="Siswa laki-laki"><rect x="1" y="22" width="11" height="17" rx="4" fill="#e8573d"/><rect x="3" y="26" width="7" height="4" rx="1.5" fill="#f6b93b"/><g class="lg l1"><rect x="14" y="38" width="6" height="11" rx="2" fill="#ffd2a8"/><rect x="12" y="47" width="10" height="6" rx="3" fill="#2a2a2a"/></g><g class="lg l2"><rect x="23" y="38" width="6" height="11" rx="2" fill="#ffd2a8"/><rect x="21" y="47" width="10" height="6" rx="3" fill="#2a2a2a"/></g><rect x="12" y="34" width="18" height="8" rx="2" fill="#1f4fa8"/><rect x="11" y="21" width="20" height="16" rx="5" fill="#fff" stroke="#c7d3ea" stroke-width="1"/><polygon points="20,22 24,22 23,30 21,30" fill="#1f4fa8"/><rect x="28" y="24" width="6" height="12" rx="3" fill="#ffd2a8"/><rect x="27" y="22" width="7" height="6" rx="3" fill="#fff" stroke="#c7d3ea" stroke-width="1"/><circle cx="21" cy="12" r="10" fill="#ffd2a8"/><path d="M10.5 11 Q11 1.5 21 1.5 Q31 1.5 31.5 11 Q27 6.5 21 7.5 Q15 6.5 10.5 11Z" fill="#2b1b12"/><path d="M13 4 L11 0.5 L17 2.5Z M20 2 L21 -1 L25 2.5Z" fill="#2b1b12"/><circle cx="25.5" cy="12.5" r="1.7" fill="#222"/><circle cx="26" cy="12" r=".6" fill="#fff"/><circle cx="28.5" cy="16.5" r="2" fill="#ff9aa2" opacity=".6"/><path d="M22.5 17 Q26 20.5 29.5 17" stroke="#7a3b1c" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div></div>
+ <div id="pad"><button data-k="l" aria-label="Jalan ke kiri">◀</button><button data-k="r" aria-label="Jalan ke kanan">▶</button><button data-k="j">Lompat</button></div>
+ <p id="tip">Keyboard: panah ◀ ▶ (atau A D) untuk jalan, Spasi atau ▲ untuk lompat. Di HP, pakai tombol di atas.</p>
+ <div id="intro" class="on"><div class="card"><h2>Petualangan “Belum Bisa”</h2><p>Jalan dan lompat sendiri! Pipa hijau menghalangi jalanmu dan terlalu tinggi untuk dilompati. Lompat dari bawah blok “?” untuk memukulnya, lalu jawab pertanyaannya dengan benar supaya pipa terbuka. Salah jawab? Tidak apa-apa, coba lagi. Ingat: kamu <b>belum</b> bisa, bukan tidak bisa!</p><button class="go" id="start">Mulai petualangan</button></div></div>
+ <div id="modal"><div class="card" id="box"></div></div>
+</div>
+<script>
+const Q=[
+["Nilai Matematikamu rendah dan kamu merasa “aku tidak bisa Matematika”. Langkah mana yang paling membantu membangun keyakinan dirimu?",["Menyerah, karena Matematika memang bukan bakatku","Menunggu sampai tiba-tiba paham","Mulai dari satu soal yang paling mudah, lalu naik bertahap","Menyalin jawaban teman supaya cepat selesai"],2,"Langkah kecil yang berhasil adalah pengalaman keberhasilan, sumber self-efficacy yang paling kuat."],
+["Kamu diminta presentasi di depan kelas dan merasa takut. Kalimat mana yang paling mencerminkan The Power of Yet yang lengkap (ada “belum” dan strategi)?",["“Aku belum bisa, tapi ya sudahlah.”","“Aku belum berani tampil, jadi aku mulai dari kelompok kecil dulu.”","“Aku tidak bisa tampil, titik.”","“Aku pasti bisa kalau punya bakat.”"],1,"“Belum” ditambah strategi mengubah kesulitan menjadi rencana."],
+["Kamu mendapat nilai ulangan jelek padahal sudah belajar. Respons mana yang paling membantumu berkembang?",["“Aku memang bodoh.”","“Gurunya yang tidak pandai mengajar, bukan salahku.”","“Ya sudah, lain kali tidak usah belajar.”","“Bagian mana yang belum kukuasai, dan cara belajar apa yang bisa kucoba?”"],3,"Kegagalan adalah umpan balik, bukan vonis."],
+["Temanmu yang dulu nilainya sama denganmu kini naik nilainya setelah rutin latihan soal. Apa yang sebaiknya kamu lakukan?",["Bertanya bagaimana cara belajarnya, lalu mencoba strategi yang cocok untukku","Merasa iri dan menjauhinya","Berpikir dia memang terlahir pintar","Berpura-pura tidak peduli"],0,"Melihat orang yang mirip kita berhasil (vicarious experience) bisa jadi sumber strategi."],
+["Jantungmu berdebar kencang sebelum ujian dan kamu mulai berpikir “aku pasti gagal”. Apa yang sebaiknya kamu lakukan?",["“Aku pasti gagal, lebih baik pasrah.”","Mencontek supaya tidak cemas lagi","Menarik napas dalam, lalu berkata “deg-degan itu wajar, aku sudah belajar, aku mulai dari soal yang kubisa”","Memarahi diri sendiri karena cemas"],2,"Cemas itu wajar dan bukan tanda tidak mampu. Tenangkan diri, lalu mulai dari yang bisa."],
+["Temanmu gagal dalam permainan Step Up Card dan terlihat kecewa. Kalimat mana yang paling mendukung?",["“Kamu memang tidak berbakat, sudahlah.”","“Aku lihat kamu sudah berusaha keras. Coba lagi dengan cara lain, aku siap bantu.”","“Kok bisa gagal? Itu kan gampang.”","Diam saja dan menertawakannya"],1,"Dukungan yang baik memuji usaha dan strategi, bukan hanya hasil."],
+["Kamu ingin menyusun rencana belajar mingguan. Rencana mana yang paling mungkin membangun keyakinan dirimu?",["“Semoga nilaiku naik sendiri.”","“Mulai besok aku belajar 10 jam tanpa istirahat.”","“Aku akan jadi juara satu minggu ini.”","“Setiap hari aku latihan 10 soal Matematika dan bertanya kalau ada yang belum paham.”"],3,"Target kecil, jelas, dan terukur mudah dicapai, lalu menambah keyakinanmu."],
+["Apa inti dari growth mindset yang bisa membuatmu lebih percaya diri?",["Kemampuan sudah ditentukan sejak lahir dan tidak bisa berubah","Cukup berusaha keras tanpa perlu strategi atau bantuan","Kemampuan dapat tumbuh melalui usaha, strategi yang tepat, dan bantuan orang lain","Hanya orang berbakat yang bisa berkembang"],2,"Kemampuan tumbuh lewat usaha, strategi, dan bantuan orang lain."],
+["Kamu sering ragu bertanya di kelas karena takut salah. Langkah mana yang paling sesuai dengan growth mindset?",["Mulai bertanya satu hal kecil kepada teman dekat atau guru, lalu berlanjut bertanya di kelas","Tidak pernah bertanya supaya tidak malu","Menunggu teman lain yang bertanya","Menganggap bertanya tanda orang kurang pintar"],0,"Bertanya adalah strategi mencari bantuan. Mulai dari langkah kecil."],
+["Saat ujian ada soal yang belum kamu kuasai. Sikap mana yang paling mencerminkan belajar mandiri dan jujur?",["Melihat jawaban teman sebelah","Mengerjakan yang bisa dengan usaha sendiri, lalu mencatat materi yang belum dikuasai untuk dipelajari lagi","Mengosongkan semua jawaban karena merasa pasti salah","Menebak sambil menyalahkan guru"],1,"Jujur dan berusaha sendiri menunjukkan apa yang perlu dipelajari lagi."]
+];
+const $=id=>document.getElementById(id),X=n=>500+n*650,W=$("world"),me=$("me"),st=$("stage");
+const WW=X(11),K={l:0,r:0},G=1900,V=660,SP=300;
+let AC,mg,on=1,mt=0,step=0,nt=0;
+function au(){if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();mg=AC.createGain();mg.gain.value=on?.5:0;mg.connect(AC.destination)}if(AC.state==='suspended')AC.resume()}
+function tone(f,d,ty,v,t0,f2){if(!AC)return;const t=AC.currentTime+(t0||0),o=AC.createOscillator(),g=AC.createGain();o.type=ty||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v||.12,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(mg);o.start(t);o.stop(t+d)}
+const SFX={jump:()=>tone(300,.18,'square',.12,0,720),bump:()=>{tone(110,.14,'triangle',.3);tone(220,.08,'square',.1)},coin:()=>{tone(988,.08,'square',.12);tone(1319,.3,'square',.12,.08)},ok:()=>[523,659,784,1047].forEach((f,k)=>tone(f,.16,'square',.12,k*.09)),no:()=>{tone(220,.2,'sawtooth',.12,0,110);tone(160,.3,'sawtooth',.12,.18,80)},pipe:()=>tone(420,.45,'triangle',.22,0,90),win:()=>[523,659,784,1047,784,1047,1319].forEach((f,k)=>tone(f,.22,'square',.13,k*.13))};
+const S=n=>{if(AC&&on)SFX[n]()};
+const MEL="egCgegagdgagdeg.aCagega.agedcde.CagaCagedegaged.aaCagegaagedegC.",CH=[131,98,110,87],AR=[[262,330,392,523],[247,294,392,494],[220,262,330,440],[220,262,349,440]],NF={c:523,d:587,e:659,g:784,a:880,C:1047};
+function nz(d,v,t0){const n=AC.sampleRate*d|0,b=AC.createBuffer(1,n,AC.sampleRate),a=b.getChannelData(0);for(let j=0;j<n;j++)a[j]=Math.random()*2-1;const s=AC.createBufferSource(),g=AC.createGain(),t=AC.currentTime+t0;s.buffer=b;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(g);g.connect(mg);s.start(t)}
+function music(){if(mt)return;nt=AC.currentTime+.05;mt=setInterval(()=>{while(nt<AC.currentTime+.3){const k=step%128,b=k%16,c=(k>>4)&3,t0=nt-AC.currentTime,v=paused?.4:1,m=NF[MEL[k>>1]];
+if(!(k&1)&&m)tone(m,.2,'square',.06*v,t0);
+if(!(k&1))tone(AR[c][[0,1,2,3,2,1,2,1][b>>1]],.1,'square',.025*v,t0);
+if([0,3,6,8,11,14].includes(b))tone(CH[c]*([3,11].includes(b)?2:1),.2,'triangle',.2*v,t0);
+if([0,8,11].includes(b))tone(150,.12,'sine',.3*v,t0,45);
+if(b===4||b===12)nz(.12,.1*v,t0);else if(b%4===2)nz(.03,.035*v,t0);
+nt+=.12;step++}},100)}
+let i,sc,co,tries,px,py,vy,dir,paused=true,last,open,over,started;
+function build(){W.innerHTML='<div class="ground"></div>';W.style.width=WW+"px";
+ Q.forEach((_,n)=>{W.insertAdjacentHTML("beforeend",`<div class="blk" id="b${n}" style="left:${X(n)}px">?</div><div class="pipe" id="p${n}" style="left:${X(n)+90}px"></div>`)});
+ W.insertAdjacentHTML("beforeend",`<div class="flag" style="left:${X(10)}px">🏁</div>`)}
+function ask(){tries=0;const[q,o,a]=Q[i];paused=true;K.l=K.r=0;
+ $("box").innerHTML=`<h2>Soal ${i+1}</h2><p>${q}</p>`+o.map((t,k)=>`<button class="opt" data-k="${k}">${"ABCD"[k]}. ${t}</button>`).join("")+'<p id="fb"></p>';
+ $("modal").classList.add("on");
+ $("box").querySelectorAll(".opt").forEach(b=>b.onclick=()=>pick(b,+b.dataset.k,a))}
+function pick(b,k,a){if(k!==a){tries++;S('no');b.classList.add("no");b.disabled=true;$("fb").innerHTML='<span class="bad">Belum tepat. Kamu belum sampai, coba pilih jawaban lain!</span>';return}
+ const pts=[100,70,40][tries]||20;sc+=pts;S('ok');b.classList.add("ok");
+ $("box").querySelectorAll(".opt").forEach(x=>x.disabled=true);
+ $("fb").innerHTML=`Betul! +${pts} poin. ${Q[i][3]}`;
+ $("box").insertAdjacentHTML("beforeend",'<button class="go" id="nx">Lanjut ▶</button>');
+ $("nx").focus();$("nx").onclick=resume;$("sc").textContent=sc}
+function resume(){$("modal").classList.remove("on");const b=$("b"+i);b.classList.add("used");b.textContent="";$("p"+i).classList.add("open");open[i]=1;
+ co++;$("co").textContent=co;$("pr").textContent=i+1;
+ W.insertAdjacentHTML("beforeend",`<div class="coin" style="left:${X(i)+10}px;bottom:240px">🪙</div>`);
+ S('coin');setTimeout(()=>S('pipe'),200);paused=false;last=performance.now()}
+function end(){paused=true;S('win');const s=sc>=900?3:sc>=600?2:1;
+ $("box").innerHTML=`<h2>Kamu sampai di garis akhir! ${"⭐".repeat(s)}</h2><p>Skor akhir: <b>${sc}</b> dari 1000. Setiap soal yang awalnya salah lalu kamu coba lagi adalah bukti bahwa usaha dan strategi membuatmu berkembang.</p><p><b>Aku belum bisa, bukan tidak bisa.</b></p><button class="go" id="again">Main lagi</button>`;
+ $("modal").classList.add("on");$("again").onclick=begin}
+function jump(){if(!paused&&py===0){vy=V;S('jump')}}
+function tick(t){requestAnimationFrame(tick);if(paused){last=t;return}
+ const dt=Math.min(.04,(t-last)/1000);last=t;const m=K.r-K.l;
+ if(m)dir=m;px=Math.max(0,px+m*SP*dt);
+ if(py>0||vy>0){vy-=G*dt;py+=vy*dt;if(py<=0){py=0;vy=0}}
+ const f=open.indexOf(0);
+ if(f>=0){const lim=X(f)+48;if(px>lim)px=lim;
+  const bx=X(f);if(vy>0&&px+40>bx&&px+10<bx+52&&py+50>=105){py=55;vy=0;i=f;$("b"+f).classList.add("hit");S('bump');setTimeout(()=>$("b"+f).classList.remove("hit"),350);ask()}}
+ else if(px>=X(10)&&!over){over=1;end()}
+ const cam=Math.max(0,Math.min(px-140,WW-st.clientWidth));
+ W.style.transform=`translateX(${-cam}px)`;$("sky").style.backgroundPositionX=-cam*.3+"px";
+ me.style.left=px-cam+"px";me.style.bottom=70+py+"px";me.style.scale=dir<0?"-1 1":"1 1";
+ me.className=m&&py===0?"walk":""}
+function begin(){i=0;sc=0;co=0;px=40;py=0;vy=0;dir=1;over=0;open=Q.map(()=>0);K.l=K.r=0;
+ $("sc").textContent=0;$("co").textContent=0;$("pr").textContent=0;
+ $("modal").classList.remove("on");$("intro").classList.remove("on");build();
+ paused=false;last=performance.now();au();music();if(!started){started=1;requestAnimationFrame(tick)}}
+addEventListener("keydown",e=>{if(paused)return;const k=e.key.toLowerCase();
+ if(k==="arrowleft"||k==="a")K.l=1;else if(k==="arrowright"||k==="d")K.r=1;else if(k===" "||k==="arrowup"||k==="w")jump();else return;e.preventDefault()});
+addEventListener("keyup",e=>{const k=e.key.toLowerCase();if(k==="arrowleft"||k==="a")K.l=0;if(k==="arrowright"||k==="d")K.r=0});
+document.querySelectorAll("#pad button").forEach(b=>{const k=b.dataset.k;
+ b.addEventListener("pointerdown",e=>{e.preventDefault();k==="j"?jump():K[k]=1});
+ ["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,()=>{if(k!=="j")K[k]=0}))});
+$("start").onclick=begin;
+$("mu").onclick=()=>{on=!on;au();mg.gain.value=on?.5:0;$("mu").textContent=on?"🔊":"🔇"};
+</script>
+</body>
+</html>
